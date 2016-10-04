@@ -2,10 +2,8 @@
 #'
 #' @import data.table
 #' @param dt data.table containing physiological data
-#' @param crrt Numeric.Binary vector of 0 or 1. Assessment of prior chronic renal insufficiency.
+#' @param crrt Strings. Name of the Binary vector containing the assessment of prior chronic renal insufficiency.
 #' @param window Numeric.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -23,7 +21,7 @@
 
 
 
-gen_apache_aki <- function(dt, crrt, window, format = "dataItem") {
+gen_apache_aki <- function(dt, crrt, window = c(0,24)) {
   #  ================================
   #  = APACHE - Acute Kidney Injury =
   #  ================================
@@ -38,35 +36,28 @@ gen_apache_aki <- function(dt, crrt, window, format = "dataItem") {
   apache_aki <- "apache_aki"
   w_apache_aki <- "w_apache_aki"
 
-
-  # Prioritize the value to take into account for the acute kidney injury
-
-  switch(format, dataItem =  {aki <- "Creatinine"},
-         NHICcode =     {aki <- "NIHR_HIC_ICU_0166"},
-         shortName = {aki <- "creatinine"}
-  )
-
-
   # Update based on conditions
   # Order of conditions is IMPORTANT
 
+  dt[, (w_apache_aki) := 0]
+
   # APACHE = 0
-  dt[(get(aki) < c(54)), (w_apache_aki) := 0]
+  dt[`Creatinine` < c(54), (w_apache_aki) := 0]
 
   # APACHE = 1
-  dt[(get(aki) %between% c(55, 129)), (w_apache_aki) := 1]
+  dt[`Creatinine` %between% c(55, 129), (w_apache_aki) := 1]
 
   # APACHE = 2
-  dt[(get(aki) > c(129)), (w_apache_aki) := 2]
+  dt[`Creatinine` > c(129), (w_apache_aki) := 2]
 
   # APACHE = 3
-  dt[(get(aki) > c(169)), (w_apache_aki) := 3]
+  dt[`Creatinine` > c(169), (w_apache_aki) := 3]
 
   # APACHE = 4
-  dt[(get(aki) > c(304)), (w_apache_aki) := 4]
+  dt[`Creatinine` > c(304), (w_apache_aki) := 4]
 
   # crrt
-  dt[crrt < 1, (w_apache_aki) := (w_apache_aki)*2]
+  dt[get(crrt) < 1, (w_apache_aki) := (w_apache_aki)*2]
 
   # Calculate APACHE score for time window
   dt[time %between% window, (apache_aki) := max(w_apache_aki, na.rm = T), by = c("site", "episode_id")]

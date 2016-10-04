@@ -4,15 +4,12 @@
 \alias{gen_apache_rf}
 \title{Generates the APACHE Respiratory Failure score}
 \usage{
-gen_apache_rf(dt, window, format = "dataItem")
+gen_apache_rf(dt, window = c(0, 24))
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
 
 \item{window}{Numerical.Vector delimiting boundaries for time-window.}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 Generates the APACHE Respiratory Failure score;
@@ -28,7 +25,7 @@ ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 ddata[, ("PaO2/FiO2 ratio") := sample(seq(4,40,1), 200, replace = T)]
 ddata[, ("PaO2 - ABG") := sample(seq(4,90,1), 200, replace = T)]
-gen_apache_rf(ddata, window = c(0,24), format = "dataItem")
+gen_apache_rf(ddata, window = c(0,24))
 ddata[time \%between\% c(0,24), .N, by = c("site", "episode_id", "apache_rf")]
 
 }

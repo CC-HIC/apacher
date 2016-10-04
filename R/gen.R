@@ -2,74 +2,6 @@
 #'
 
 
-#  =================================
-#  = Positive pressure ventilation =
-#  =================================
-#' @description gen_ppv creates a logical vector if positive pressure ventilated
-#'
-#' @param dt data.table containing physiological data
-#' @param t_ Numeric. time
-#' @param id_ Numeric. Unique identifier for patient
-#' @examples
-#' # gen_ppv(ddata, time, id, Total_Resp_Rate_Ventil)
-#' # gen_ppv makes a logical vector if positive pressure ventilated
-
-#' @export
-gen_ppv <- function(dt, t_=time, id_= id, rrate_ppv_) {
-    # - [ ] TODO(2016-05-20): add in airway and ventilated fields
-
-    # Non-standard evaluation
-    pars <- as.list(match.call()[-1])
-
-    id_ <- as.character(pars$id_)
-    t_ <- as.character(pars$t_)
-    rrate_ppv_ <- as.character(pars$rrate_ppv_)
-
-    # need ccdata wide
-    # remember that data.table will copy as reference
-    # need a unique id (site+episode_id)
-    # plus time
-    # plus a series of columns or logical expression that can be used to define PPV
-
-    setkeyv(dt, c(id_, t_))
-    if ("ppv" %chin% names(dt)) dt[, `:=`(ppv =NULL)]
-    dt[, `:=`(
-        ppv = get(rrate_ppv_) > 0
-        ),
-        roll=+Inf, # roll forwards without limit
-        rollends=c(FALSE, TRUE) # roll forwards from the last value, but not back from first
-                 ]
-}
-
-#  ==========================
-#  = Mean arterial pressure =
-#  ==========================
-# - [ ] FIXME(2016-05-20): wrap these two functions into one (gen_map and choose_first_nonmissing)
-
-#' Generate MAP from blood pressure
-#'
-#' @description gen_map derives MAP from systolic and diastolic blood pressure
-#' @param bps Numerical. Systolic blood pressure.
-#' @param bpd Numerical. Diastolic blood pressure.
-#' @examples
-#' # ddata <- NULL
-#' # ddata$bps <- as.data.table(sample(seq(60, 200, 1), 200, replace = T))
-#' # ddata$bpd <- sample(seq(20, 120, 1), 200, replace = T)
-#' #system.time(ddata$map <- gen_map(ddata$bps, ddata$bpd))
-#' @export
-
-gen_map <- function(bps, bpd) {
-    return(bpd + (bps-bpd)/3)
-}
-
-#' Choose first non-missing
-#' @export
-#'
-choose_first_nonmissing <- function(colvalues) {
-    # library(purrr)
-    reduce(colvalues, function(x,y) ifelse(!is.na(x), x, y))
-}
-
 #  ==========================
 #  =      Comorbidity       =
 #  ==========================
@@ -104,14 +36,14 @@ choose_first_nonmissing <- function(colvalues) {
 #'      \item Oncohaematologic Disease ;
 #'      \item AIDS.}}}
 #' @param fields. Vector of strings naming the fields requested for the comorbidity score calculation.
-#' Fields have to be formatted according to ITEM_REF yaml file, as "NHICcode", or "dataItem", or "shortName".
+#' Fields have to be formatted according to ITEM_REF yaml file, as "dataItem".
 #' @examples
 #' # library(data.table)
 #' # ddata <- NULL
 #' # ddata$crrt <- sample(c(1,0),200, replace = T)
 #' # ddata$chemotherapy <- sample(c(1,0),200, replace = T)
 #' # ddata <- as.data.table(ddata)
-#' # ddata <- gen_comorbidity(dt = ddata, format = "dataItem")
+#' # ddata <- gen_comorbidity(dt = ddata, fields = c("chemotherapy", "crrt"))
 #' @export
 
 gen_comorbidity <- function(dt, fields) {
@@ -168,7 +100,7 @@ gen_comorbidity <- function(dt, fields) {
       dt[`d_comorbidity` %between% c(16,1490000), (d_comorbidity) := 0]
 
       # Reset The NA's
-      dt[`d_comorbidity` == 1500000, (d_comorbidity) := NA]
+      dt[`d_comorbidity` == 1500000, (d_comorbidity) := 0]
       dt[, (fields) := lapply(dt[,fields, with = F], function(x){x <- ifelse(x == 100000, NA , x)})]
 }
 
@@ -180,26 +112,17 @@ gen_comorbidity <- function(dt, fields) {
 
 #' Generate q_rr from respiratory fields
 #' @param dt data for computation.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #' @param qual vector of inner and outer bounds of quality assessment for respiratory rate.
 #' @examples
 #' ddata <- NULL
 #' ddata$"Spontaneous Respiratory Rate" <- sample(seq(0,100,1), 200, replace = T)
 #' ddata <- as.data.table(ddata)
-#' gen_q_rr(ddata, format = "dataItem", qual = c(3,60))
+#' gen_q_rr(ddata, qual = c(3,60))
 #'
 #' @export
 
 
-# requires at least one surrogate of respiratory rate (rr). Fields used for the calculation have to be
-# formatted as dataItem, or NHICcode, or shortName, among:
-#           - Total respiratory rate (monitor) / NIHR_HIC_ICU_0145 / Total_Resp_Rate_Monit
-#           - Total respiratory rate (ventilator) / NIHR_HIC_ICU_0146 / Total_Resp_Rate_Ventil
-#           - Spontaneous Respiratory Rate / NIHR_HIC_ICU_0549 / rrate_spont
-#           - Mandatory Respiratory Rate / NIHR_HIC_ICU_0147 / Mandat_Resp_Rate
-
-gen_q_rr <- function(dt, format = "dataItem", qual = c(3,60)) {
+gen_q_rr <- function(dt, qual = c(3,60)) {
 
 
   # Set q_rr = 0 as a default
@@ -212,45 +135,31 @@ gen_q_rr <- function(dt, format = "dataItem", qual = c(3,60)) {
   #     - or Total respiratory rate (monitor) if available and between 3 and 60 c/min
   #     - or Total respiratory rate (ventilator) if available and between 3 and 60 c/min
 
-
-  # Set the label
-  switch(format, dataItem =  {field_p <- "Spontaneous Respiratory Rate"
-                              field_pp <- "Total respiratory rate (monitor)"
-                              field_ppp <- "Total respiratory rate (ventilator)"},
-                 NHICcode =     {field_p <- "NIHR_HIC_ICU_0549"
-                              field_pp <- "NIHR_HIC_ICU_0145"
-                              field_ppp <- "NIHR_HIC_ICU_0146"},
-                 shortName = {field_p <- "rrate_spont"
-                              field_pp <- "Total_Resp_Rate_Monit"
-                              field_ppp <- "Total_Resp_Rate_Ventil"}
-         )
-
-
   # Define the value for q_rr
-  if (field_p %in% names(dt)){
-    dt[!is.na(get(field_p))
-       & get(field_p)
-       %between% qual, q_rr := get(field_p)]
+  if ("Spontaneous Respiratory Rate" %in% names(dt)){
+    dt[!is.na(`Spontaneous Respiratory Rate`)
+       & `Spontaneous Respiratory Rate`
+       %between% qual, q_rr := `Spontaneous Respiratory Rate`]
   }else{
-    warning(paste(field_p, "not available"))
+    warning(paste("Spontaneous Respiratory Rate", "not available"))
   }
 
-  if (field_pp %in% names(dt)){
+  if ("Total respiratory rate (monitor)" %in% names(dt)){
     dt[q_rr == 10000
-       & !is.na(get(field_pp))
-       & get(field_pp)
-       %between% qual, q_rr := get(field_pp)]
+       & !is.na(`Total respiratory rate (monitor)`)
+       & `Total respiratory rate (monitor)`
+       %between% qual, q_rr := `Total respiratory rate (monitor)`]
   }else{
-    warning(paste(field_pp, "not available"))
+    warning(paste("Total respiratory rate (monitor)", "not available"))
   }
 
-  if (field_ppp %in% names(dt)){
+  if ("Total respiratory rate (ventilator)" %in% names(dt)){
     dt[q_rr == 10000
-       & !is.na(get(field_ppp))
-       & get(field_ppp)
-       %between% qual, q_rr := get(field_ppp)]
+       & !is.na(`Total respiratory rate (ventilator)`)
+       & `Total respiratory rate (ventilator)`
+       %between% qual, q_rr := `Total respiratory rate (ventilator)`]
   }else{
-    warning(paste(field_ppp, "not available"))
+    warning(paste("Total respiratory rate (ventilator)", "not available"))
   }
 
   dt[q_rr == 100000, q_rr := NA]
@@ -265,10 +174,7 @@ gen_q_rr <- function(dt, format = "dataItem", qual = c(3,60)) {
 
 #' Generate Alveolar to Arterial gradient
 #' @description gen_grad derives an Alveolar to Arterial gradient from fio2 and/or PaO2 and PaCO2 fields
-#' \describe{Requires FiO2 and/or P/F ratio and PaO2 formatted as dataItem, or NHICcode, or shortName, among:}{
-#'    \itemize{
-#'        \item Inspired fraction of oxygen / NIHR_HIC_ICU_0150 / fiO2
-#'        \item PaO2/FiO2 ratio / NIHR_HIC_ICU_0913 / pf_ratio}}
+#' \describe{Requires FiO2 and/or P/F ratio and PaO2 formatted as dataItem}
 #' \describe{Calculations are performed according to the following Formula:}{
 #'     \itemize{
 #'        \item (A-a)O2 Gradient = (( PAtm - PH2O) * FIO2 - ( PaCO2 / RQ )) - PaO2
@@ -285,53 +191,42 @@ gen_q_rr <- function(dt, format = "dataItem", qual = c(3,60)) {
 #' ddata[, ("PaO2 - ABG") := sample(seq(4,8,0.1), 200, replace = T)]
 #' ddata[, ("PaCO2 - ABG") := sample(seq(3,6,0.1), 200, replace = T)]
 #' ddata[, ("PaO2/FiO2 ratio") := sample(seq(4,40,1), 200, replace = T)]
-#' gen_grad(ddata, format = "dataItem")
+#' gen_grad(ddata)
 #' ddata[, .N, grad_rf]
 #'
 #' @export
 
-
-
-
-gen_grad <- function(dt, format = "dataItem"){
-
-  # Prioritize the value to take into account for the fiO2
-  switch(format, dataItem =  {fio2_p <- "Inspired fraction of oxygen"
-                              fio2_pp <- "PaO2/FiO2 ratio"
-                              PaO2  <- "PaO2 - ABG"
-                              PaCO2 <-  "PaCO2 - ABG"},
-                 NIHCcode =     {fio2_p <- "NIHR_HIC_ICU_0150"
-                              fio2_pp <- "NIHR_HIC_ICU_0913"
-                              PaO2  <- "NIHR_HIC_ICU_0132"
-                              PaCO2 <- "NIHR_HIC_ICU_0134"},
-                 shortName = {fio2_p <- "fiO2"
-                              fio2_pp <- "pf_ratio"
-                              PaO2 <- "~"
-                              PaCO2 <- "~"}
-  )
+gen_grad <- function(dt){
 
   # Verify the availability of items
-  if  (!(fio2_p %in% names(dt) | fio2_pp %in% names(dt)) & PaO2 %in% names(dt) & PaCO2 %in% names(dt)){
-    stop(paste("Missing item for Oxygen Gradient calculation.",
-               fio2_p, "or", fio2_pp, "and", PaO2, "and", PaCO2, "are requested"))
+  if  (!("Inspired fraction of oxygen" %in% names(dt) |
+         "PaO2/FiO2 ratio" %in% names(dt)) &
+         "PaO2 - ABG" %in% names(dt) &
+         "PaCO2 - ABG" %in% names(dt)){
+      stop(paste("Missing item for Oxygen Gradient calculation.",
+                 "Inspired fraction of oxygen", "or",
+                 "PaO2/FiO2 ratio", "and",
+                 "PaO2 - ABG", "and",
+                 "PaCO2 - ABG", "are requested"))
   }
 
   # Set the default value to 0
   dt[, grad_rf := 100000]
 
-  dt[fio2_p > 1, (fio2_p) := fio2_p/100]
-  dt[fio2_pp < 6, (fio2_pp) := NA]
+  dt[`Inspired fraction of oxygen` > 1, ("Inspired fraction of oxygen") := `Inspired fraction of oxygen`/100]
+  dt[`PaO2/FiO2 ratio` < 6, ("PaO2/FiO2 ratio") := NA]
 
   # Compute the gradient
-  if(fio2_p %in% names(dt)){
-    dt[!is.na(get(PaO2)) & !is.na(get(fio2_p)) & !is.na(get(PaCO2)),
-       grad_rf := ((100-6.2)*get(fio2_p) - get(PaO2) - get(PaCO2))]
+  if("Inspired fraction of oxygen" %in% names(dt)){
+    dt[!is.na(`PaO2 - ABG`) & !is.na(`Inspired fraction of oxygen`) & !is.na(`PaCO2 - ABG`),
+       grad_rf := ((100-6.2)*`Inspired fraction of oxygen` - `PaO2 - ABG` - `PaCO2 - ABG`)]
   }else{
-    dt[!is.na(get(PaO2)) & !is.na(get(fio2_pp)) & !is.na(get(PaCO2)),
-       grad_rf := (100-6.2)*get(PaO2)/get(fio2_pp)-get(PaO2)-get(PaCO2)]
+    dt[!is.na(`PaO2 - ABG`) & !is.na(`PaO2/FiO2 ratio`) & !is.na(`PaCO2 - ABG`),
+       grad_rf := (100-6.2)*`PaO2 - ABG`/`PaO2/FiO2 ratio` - `PaO2 - ABG` - `PaCO2 - ABG`]
   }
 
-  dt[grad_rf == 100000 & !is.na(get(PaO2)) & !is.na(get(fio2_pp)) & !is.na(get(PaCO2)), grad_rf := (100-6.2)*get(PaO2)/get(fio2_pp)-get(PaO2)-get(PaCO2)]
+  dt[grad_rf == 100000 & !is.na(`PaO2 - ABG`) & !is.na(`PaO2/FiO2 ratio`) & !is.na(`PaCO2 - ABG`),
+     grad_rf := (100-6.2)*`PaO2 - ABG`/`PaO2/FiO2 ratio` - `PaO2 - ABG` - `PaCO2 - ABG`]
 
 
   # Reset the Na's
@@ -356,22 +251,17 @@ gen_grad <- function(dt, format = "dataItem"){
 #' ddata <- NULL
 #' ddata$"Haemoglobin" <- sample(seq(5, 25, 1), 200, replace = T)
 #' ddata <- as.data.table(ddata)
-#' gen_haemo(ddata, mcch = NULL, format = "dataItem")
+#' gen_haemo(ddata, mcch = NULL)
 #'
 #' @export
 
-  gen_haemo <- function(dt, mcch = NULL, format = "dataItem"){
+  gen_haemo <- function(dt, mcch = NULL){
 
     # Create the variable d_ccmh if ccmh unavailable
-    ifelse (is.null(mcch), dt[, d_mcch := 33], dt[, d_mcch := mcch])
+    ifelse (is.null(mcch), dt[, d_mcch := 330], dt[, d_mcch := mcch])
 
-    # Calculate the derived haematocrit from haemoglobin
-    switch(format, dataItem =  {haemo <- "Haemoglobin"},
-                   NIHCC =     {haemo <- "NIHR_HIC_ICU_0179"},
-                   shortName = {haemo <- stop("No shortNames available for this variable")}
-    )
-
-   dt[, d_ht := get(haemo) / d_mcch]
+    dt[, d_ht := `Haemoglobin` / d_mcch]
+    dt[is.na(d_ht), d_ht := `Haemoglobin ABG/VBG` / d_mcch]
 
   }
 
@@ -410,7 +300,7 @@ gen_grad <- function(dt, format = "dataItem"){
         # Trauma :
           # Multiple trauma : -1.228
           # Head trauma : -0.517
-          # Neurologic :
+        # Neurologic :
           # Seizure disorder : -0.584
           # ICH/SDH/SAH : 0.723
         # Other :
@@ -449,5 +339,13 @@ gen_grad <- function(dt, format = "dataItem"){
           # Respiratory : -0.610
           # Gastrointestinal : -0.613
           # Metabolic/renal : -0.196
+
+    weight <- "weight"
+
+    `Ultimate primary reason for admission to unit`
+    `Secondary reasons for admission to your unit`
+    `Primary reason for admission to your unit`
+
+
 
   }

@@ -4,7 +4,7 @@
 \alias{gen_haemo}
 \title{Generate Haematocrit variable from the haemoglobin}
 \usage{
-gen_haemo(dt, mcch = NULL, format = "dataItem")
+gen_haemo(dt, mcch = NULL)
 }
 \arguments{
 \item{dt}{data for computation.}
@@ -21,7 +21,7 @@ gen_grad derives a Haematocrit from haemoglobin and mean globular volume
 ddata <- NULL
 ddata$"Haemoglobin" <- sample(seq(5, 25, 1), 200, replace = T)
 ddata <- as.data.table(ddata)
-gen_haemo(ddata, mcch = NULL, format = "dataItem")
+gen_haemo(ddata, mcch = NULL)
 
 }
 

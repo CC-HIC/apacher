@@ -4,7 +4,7 @@
 \alias{gen_grad}
 \title{Generate Alveolar to Arterial gradient}
 \usage{
-gen_grad(dt, format = "dataItem")
+gen_grad(dt)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
@@ -14,10 +14,7 @@ See relabel_cols for more informations.}
 }
 \description{
 gen_grad derives an Alveolar to Arterial gradient from fio2 and/or PaO2 and PaCO2 fields
-\describe{Requires FiO2 and/or P/F ratio and PaO2 formatted as dataItem, or NHICcode, or shortName, among:}{
-   \itemize{
-       \item Inspired fraction of oxygen / NIHR_HIC_ICU_0150 / fiO2
-       \item PaO2/FiO2 ratio / NIHR_HIC_ICU_0913 / pf_ratio}}
+\describe{Requires FiO2 and/or P/F ratio and PaO2 formatted as dataItem}
 \describe{Calculations are performed according to the following Formula:}{
     \itemize{
        \item (A-a)O2 Gradient = (( PAtm - PH2O) * FIO2 - ( PaCO2 / RQ )) - PaO2
@@ -30,7 +27,7 @@ ddata <- as.data.table(ddata)
 ddata[, ("PaO2 - ABG") := sample(seq(4,8,0.1), 200, replace = T)]
 ddata[, ("PaCO2 - ABG") := sample(seq(3,6,0.1), 200, replace = T)]
 ddata[, ("PaO2/FiO2 ratio") := sample(seq(4,40,1), 200, replace = T)]
-gen_grad(ddata, format = "dataItem")
+gen_grad(ddata)
 ddata[, .N, grad_rf]
 
 }

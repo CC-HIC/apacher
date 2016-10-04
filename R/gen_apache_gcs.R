@@ -6,8 +6,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -17,13 +15,13 @@
 #' ddata[ , ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[ , (gcs) := sample(seq(3,15,1), 200, replace = T)]
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
-#' system.time(gen_apache_gcs(ddata, window = c(0,24), format = "dataItem"))
+#' system.time(gen_apache_gcs(ddata, window = c(0,24)))
 #' ddata[time %between% c(0,24), .N, by = c("site","episode_id", "apache_gcs")]
 #'
 #' @export
 
 
-gen_apache_gcs <- function(dt, window, format = "dataItem") {
+gen_apache_gcs <- function(dt, window = c(0,24)) {
   #  ===============================
   #  = APACHE - Glasgow Coma Scale =
   #  ===============================
@@ -38,18 +36,14 @@ gen_apache_gcs <- function(dt, window, format = "dataItem") {
   apache_gcs <- "apache_gcs"
   w_apache_gcs <- "w_apache_gcs"
 
-  # Prioritize the value to take into account for Glasgow Coma Scale Score
-  switch(format, dataItem =  {gcs <- "GCS - total"},
-         NHICcode =     {gcs <- "NIHR_HIC_ICU_0156"},
-         shortName = {gcs <- "gcs"}
-  )
-
-
   # Update based on conditions
   # Order of conditions is IMPORTANT
 
+
+
   # APACHE = 15- GCS
-  dt[,   (w_apache_gcs) := round(15 - get(gcs),0)]
+  dt[, (w_apache_gcs) := round(15 - `GCS - total`,0)]
+  dt[is.na(`GCS - total`), (w_apache_gcs) := 0]
 
   # Calculate APACHE score for time window
   dt[time %between% window, (apache_gcs) := max(w_apache_gcs, na.rm = T), by = c("site", "episode_id")]

@@ -23,7 +23,7 @@
 #'
 #' @export
 
-gen_apache_score <- function(dt, window) {
+gen_apache_score <- function(dt) {
   #  ===============================
   #  =        APACHE - main        =
   #  ===============================
@@ -57,7 +57,7 @@ gen_apache_score <- function(dt, window) {
 
     # Add each column to apache score:
     for (i in 1:length(apache)){
-      dt[time %between% window , (apache_score) := (apache_score + get(apache[i])), by= c("site", "episode_id")]
+      dt[, (apache_score) := (apache_score + get(apache[i]))]
     }
 
 }

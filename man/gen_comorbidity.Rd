@@ -2,15 +2,18 @@
 % Please edit documentation in R/gen.R
 \name{gen_comorbidity}
 \alias{gen_comorbidity}
-\title{Generate Comorbidity APACHE Score}
+\title{Various helper functions that GENerate derived variables}
 \usage{
 gen_comorbidity(dt, fields)
 }
 \arguments{
 \item{fields.}{Vector of strings naming the fields requested for the comorbidity score calculation.
-Fields have to be formatted according to ITEM_REF yaml file, as "NHICcode", or "dataItem", or "shortName".}
+Fields have to be formatted according to ITEM_REF yaml file, as "dataItem".}
 }
 \description{
+Generate Comorbidity APACHE Score
+}
+\details{
 @description gen_comorbidity counts the number of comorbidity available in dataset. If missing data, gen_comorbidity imputes missing value as 0.
  \describe{A function that counts the number of comorbidity expressed, according to APACHE definitions:}{
  \describe{- Chronic Heart Failure :}{
@@ -44,6 +47,6 @@ Fields have to be formatted according to ITEM_REF yaml file, as "NHICcode", or "
 # ddata$crrt <- sample(c(1,0),200, replace = T)
 # ddata$chemotherapy <- sample(c(1,0),200, replace = T)
 # ddata <- as.data.table(ddata)
-# ddata <- gen_comorbidity(dt = ddata, format = "dataItem")
+# ddata <- gen_comorbidity(dt = ddata, fields = c("chemotherapy", "crrt"))
 }
 

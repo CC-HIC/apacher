@@ -6,8 +6,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -17,13 +15,13 @@
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 #' ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[, (map) := sample(seq(30,120,1), 200, replace = T)]
-#' system.time(gen_apache_map(ddata, window = c(0,24), format = "dataItem"))
+#' system.time(gen_apache_map(ddata, window = c(0,24)))
 #' ddata[time %between% c(0,24), .N, by = c("site","episode_id", "apache_map")]
 #'
 #' @export
 
 
-gen_apache_map <- function(dt, window, format = "dataItem") {
+gen_apache_map <- function(dt, window = c(0,24)) {
   #  ==============================
   #  = APACHE - Arterial Pressure =
   #  ==============================
@@ -37,47 +35,28 @@ gen_apache_map <- function(dt, window, format = "dataItem") {
   apache_map <- "apache_map"
   w_apache_map <- "w_apache_map"
 
-  # Prioritize the value to take into account for map or calculate it from gen_map
-  switch(format, dataItem =  {map_mean_art <- "Mean arterial blood pressure - Art BPMean arterial blood pressure"
-                              map_mean_cuff <- "Mean arterial blood pressure - NBPMean arterial blood pressure"
-                              map_syst_art <- "Systolic Arterial blood pressure - Art BPSystolic Arterial blood pressure"
-                              map_sys_cuff <- "Systolic Arterial blood pressure - NBPSystolic Arterial blood pressure"
-                              map_dia_art <- "Diastolic arterial blood pressure - Art BPDiastolic arterial blood pressure"
-                              map_dia_cuff <- "Diastolic arterial blood pressure - NBPDiastolic arterial blood pressure"},
-                 NHICcode =     {map_mean_art <- "NIHR_HIC_ICU_0110"
-                              map_mean_cuff <- "NIHR_HIC_ICU_0111"
-                              map_syst_art <- "NIHR_HIC_ICU_0112"
-                              map_syst_cuff <- "NIHR_HIC_ICU_0113"
-                              map_dia_art <- "NIHR_HIC_ICU_0114"
-                              map_dia_cuff <- "NIHR_HIC_ICU_0115"},
-                 shortName = {map_mean_art <- "bp_m_a"
-                              map_mean_cuff <- "bp_m_ni"
-                              map_syst_art <- "bp_sys_a"
-                              map_sys_cuff <- "bp_sys_ni"
-                              map_dia_art <- "bp_dia_a"
-                              map_dia_cuff <- "bp_dia_ni"}
-  )
-
-
-  if (map_mean_art %in% names(dt) & map_mean_cuff %in% names(dt)){
-    dt[!is.na(get(map_mean_art)), d_map := get(map_mean_art)]
-    dt[is.na(get(map_mean_art)), d_map := get(map_mean_cuff)]
+  # Prioritize the value of MAP taken for APACHE calculation
+  if ("Mean arterial blood pressure - Art BPMean arterial blood pressure" %in% names(dt) & "Mean arterial blood pressure - NBPMean arterial blood pressure" %in% names(dt)){
+    dt[!is.na(`Mean arterial blood pressure - Art BPMean arterial blood pressure`),
+       d_map := `Mean arterial blood pressure - Art BPMean arterial blood pressure`]
+    dt[is.na(`Mean arterial blood pressure - Art BPMean arterial blood pressure`),
+       d_map := `Mean arterial blood pressure - NBPMean arterial blood pressure`]
   }
 
-  if (map_mean_art %in% names(dt) & !map_mean_cuff %in% names(dt)){
-    dt[, d_map := get(map_mean_art)]
+  if ("Mean arterial blood pressure - Art BPMean arterial blood pressure" %in% names(dt) & !"Mean arterial blood pressure - NBPMean arterial blood pressure" %in% names(dt)){
+    dt[, d_map := `Mean arterial blood pressure - Art BPMean arterial blood pressure`]
   }
 
-  if (!map_mean_art %in% names(dt) & map_mean_cuff %in% names(dt)){
-    dt[, d_map := get(map_mean_cuff)]
+  if (!"Mean arterial blood pressure - Art BPMean arterial blood pressure" %in% names(dt) & "Mean arterial blood pressure - NBPMean arterial blood pressure" %in% names(dt)){
+    dt[, d_map := `Mean arterial blood pressure - NBPMean arterial blood pressure`]
   }
 
-  if (map_syst_art %in% names(data) | map_dia_art %in% names(data)){
-    dt[is.na(d_map), d_map := gen_map(get(map_syst_art), get(map_dia_art)) ]
+  if ("Systolic Arterial blood pressure - Art BPSystolic Arterial blood pressure" %in% names(data) | "Diastolic arterial blood pressure - Art BPDiastolic arterial blood pressure`" %in% names(data)){
+    dt[is.na(d_map), d_map := gen_map(`Systolic Arterial blood pressure - Art BPSystolic Arterial blood pressure`, `Diastolic arterial blood pressure - Art BPDiastolic arterial blood pressure`) ]
   }
 
-  if (map_sys_cuff %in% names(dt) | map_dia_cuff %in% names(dt)){
-    dt[is.na(d_map), d_map := gen_map(get(map_sys_cuff), get(map_dia_cuff)) ]
+  if ("Systolic Arterial blood pressure - NBPSystolic Arterial blood pressure" %in% names(dt) | "Diastolic arterial blood pressure - NBPDiastolic arterial blood pressure" %in% names(dt)){
+    dt[is.na(d_map), d_map := gen_map(`Systolic Arterial blood pressure - NBPSystolic Arterial blood pressure`, `Diastolic arterial blood pressure - NBPDiastolic arterial blood pressure`) ]
   }
 
 

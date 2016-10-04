@@ -4,13 +4,10 @@
 \alias{gen_q_rr}
 \title{Generate q_rr from respiratory fields}
 \usage{
-gen_q_rr(dt, format = "dataItem", qual = c(3, 60))
+gen_q_rr(dt, qual = c(3, 60))
 }
 \arguments{
 \item{dt}{data for computation.}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 
 \item{qual}{vector of inner and outer bounds of quality assessment for respiratory rate.}
 }
@@ -21,7 +18,7 @@ Generate q_rr from respiratory fields
 ddata <- NULL
 ddata$"Spontaneous Respiratory Rate" <- sample(seq(0,100,1), 200, replace = T)
 ddata <- as.data.table(ddata)
-gen_q_rr(ddata, format = "dataItem", qual = c(3,60))
+gen_q_rr(ddata, qual = c(3,60))
 
 }
 

@@ -4,15 +4,12 @@
 \alias{gen_apache_wbc}
 \title{Generates the APACHE White Blood Cell Count score}
 \usage{
-gen_apache_wbc(dt, window, format = "dataItem")
+gen_apache_wbc(dt, window = c(0, 24))
 }
 \arguments{
 \item{dt}{data.table containing physiological data}
 
 \item{window}{Numerical.Vector delimiting boundaries for time-window.}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 Generates the APACHE wbc score;
@@ -24,7 +21,7 @@ ddata <- as.data.table(ddata)
 ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 ddata[, ("White cell count") := sample(seq(2,50,0.1), 200, replace = T)]
-system.time(gen_apache_wbc(ddata, window = c(0,24), format = "dataItem"))
+system.time(gen_apache_wbc(ddata, window = c(0,24)))
 ddata[time \%between\% c(0,24), .N, by = c("site","episode_id", "apache_wbc")]
 
 }

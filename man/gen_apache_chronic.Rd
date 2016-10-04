@@ -4,13 +4,10 @@
 \alias{gen_apache_chronic}
 \title{Generates the APACHE Chronic Health score}
 \usage{
-gen_apache_chronic(dt, format = "dataItem")
+gen_apache_chronic(dt)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 Generates the APACHE Chronic Health score; requires 15 comorbidity variables as inputs. A warning is
@@ -39,8 +36,9 @@ dt$"Admission type" <- c(sample(c("L", "U", "P", "S", "M", "R"), 200, replace = 
 dt$"classification of surgery" <- c(sample(c("M", "U", "S", "L"), 200, replace = T))
 dt$"d_comorbidity" <- c(sample(c(0, 1, 2, 3, 4, NA), 200, replace = T))
 dt <- as.data.table(dt)
-gen_apache_chronic(dt, format = "dataItem")
+gen_apache_chronic(dt)
 dt[, .N, by = b_comorbidity]
 dt[, .N, by = apache_chronic]
+
 }
 

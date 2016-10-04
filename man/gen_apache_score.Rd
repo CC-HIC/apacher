@@ -4,7 +4,7 @@
 \alias{gen_apache_score}
 \title{Generates the APACHE Score}
 \usage{
-gen_apache_score(dt, window)
+gen_apache_score(dt)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}

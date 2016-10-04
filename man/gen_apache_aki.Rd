@@ -4,17 +4,14 @@
 \alias{gen_apache_aki}
 \title{Generates the APACHE Acute Kidney Injury score}
 \usage{
-gen_apache_aki(dt, crrt, window, format = "dataItem")
+gen_apache_aki(dt, crrt, window = c(0, 24))
 }
 \arguments{
 \item{dt}{data.table containing physiological data}
 
-\item{crrt}{Numeric.Binary vector of 0 or 1. Assessment of prior chronic renal insufficiency.}
+\item{crrt}{Strings. Name of the Binary vector containing the assessment of prior chronic renal insufficiency.}
 
 \item{window}{Numeric.Vector delimiting boundaries for time-window.}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \examples{
 ddata <- NULL

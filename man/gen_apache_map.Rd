@@ -4,15 +4,12 @@
 \alias{gen_apache_map}
 \title{Generates the APACHE Arterial Pressure score}
 \usage{
-gen_apache_map(dt, window, format = "dataItem")
+gen_apache_map(dt, window = c(0, 24))
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
 
 \item{window}{Numerical.Vector delimiting boundaries for time-window.}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 Generates the APACHE Arterial Pressure score;
@@ -25,7 +22,7 @@ ddata <- as.data.table(ddata)
 ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 ddata[, (map) := sample(seq(30,120,1), 200, replace = T)]
-system.time(gen_apache_map(ddata, window = c(0,24), format = "dataItem"))
+system.time(gen_apache_map(ddata, window = c(0,24)))
 ddata[time \%between\% c(0,24), .N, by = c("site","episode_id", "apache_map")]
 
 }

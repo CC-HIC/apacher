@@ -6,8 +6,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -17,12 +15,12 @@
 #' ddata[ , ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[ , (temperature) := sample(seq(35,45,0.1), 200, replace = T)]
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
-#' system.time(gen_apache_temp(ddata, window = c(0,24), format = "dataItem"))
+#' system.time(gen_apache_temp(ddata, window = c(0,24)))
 #' ddata[time %between% c(0,24), .N, by = c("site","episode_id", "apache_temp")]
 #'
 #' @export
 
-gen_apache_temp <- function(dt, window, format = "dataItem") {
+gen_apache_temp <- function(dt, window = c(0,24)) {
   #  =============================
   #  = APACHE - Temperature =
   #  =============================
@@ -37,26 +35,17 @@ gen_apache_temp <- function(dt, window, format = "dataItem") {
   w_apache_temp <- "w_apache_temp"
 
   # Prioritize the value to take into account for the temperature
-  switch(format, dataItem =  {temp_p <- "Temperature - Central"
-                              temp_pp <- "Temperature - Non-central"},
-                 NHICcode =  {temp_p <- "NIHR_HIC_ICU_0141"
-                              temp_pp <- "NIHR_HIC_ICU_0142"},
-                 shortName = {temp_p <- "temperature_central"
-                              temp_pp <- "temperature_non_central"}
-         )
-
-
-  if (temp_p %in% names(dt) & !temp_pp %in% names(dt)){
-    dt[, d_temp := get(temp_p)]
+  if ("Temperature - Central" %in% names(dt) & !"Temperature - Non-central" %in% names(dt)){
+    dt[, d_temp := `Temperature - Central`]
   }
 
-  if (!temp_p %in% names(dt) & temp_pp %in% names(dt)){
-    dt[, d_temp := get(temp_pp)]
+  if (!"Temperature - Central" %in% names(dt) & "Temperature - Non-central" %in% names(dt)){
+    dt[, d_temp := `Temperature - Non-central`]
   }
 
-  if (temp_p %in% names(dt) & temp_pp %in% names(dt)){
-    dt[, d_temp := get(temp_pp)]
-    dt[!is.na(get(temp_p)), d_temp := get(temp_p)]
+  if ("Temperature - Central" %in% names(dt) & "Temperature - Non-central" %in% names(dt)){
+    dt[, d_temp := `Temperature - Non-central`]
+    dt[!is.na(`Temperature - Central`), d_temp := `Temperature - Central`]
   }
 
 

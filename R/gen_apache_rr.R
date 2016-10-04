@@ -6,8 +6,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -16,14 +14,14 @@
 #' ddata[,("q_rr") := sample(seq(6,60,1), 200, replace = T)]
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 #' ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
-#' gen_apache_rr(ddata, window = c(0,24), format = "dataItem")
+#' gen_apache_rr(ddata, window = c(0,24))
 #' ddata[time %between% c(0,24), .N, by = c("site", "episode_id", "apache_rr")]
 #'
 #' @export
 
 
 
-gen_apache_rr <- function(dt, window) {
+gen_apache_rr <- function(dt, window = c(0,24)) {
   #  =============================
   #  = APACHE - Respiratory Rate =
   #  =============================

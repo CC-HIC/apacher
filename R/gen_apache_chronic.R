@@ -23,20 +23,20 @@
 #'
 #' @import data.table
 #' @param dt data.table containing physiology data
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
+#'
 #' @examples
 #' dt <- NULL
 #' dt$"Admission type" <- c(sample(c("L", "U", "P", "S", "M", "R"), 200, replace = T))
 #' dt$"classification of surgery" <- c(sample(c("M", "U", "S", "L"), 200, replace = T))
 #' dt$"d_comorbidity" <- c(sample(c(0, 1, 2, 3, 4, NA), 200, replace = T))
 #' dt <- as.data.table(dt)
-#' gen_apache_chronic(dt, format = "dataItem")
+#' gen_apache_chronic(dt)
 #' dt[, .N, by = b_comorbidity]
 #' dt[, .N, by = apache_chronic]
+#'
 #' @export
 
-gen_apache_chronic <- function(dt, format = "dataItem") {
+gen_apache_chronic <- function(dt) {
   #  =========================================================
   #  = APACHE - Chronic Health Assessment and Admission Type =
   #  =========================================================
@@ -69,17 +69,6 @@ gen_apache_chronic <- function(dt, format = "dataItem") {
   b_comorbidity <- "b_comorbidity"
   apache_chronic <- "apache_chronic"
 
-  # Set the label
-  switch(format, dataItem =  {admission <- "Admission type"
-                              surgery <- "classification of surgery"},
-                 NHICcode =  {admission <- "NIHR_HIC_ICU_0398"
-                              surgery <- "NIHR_HIC_ICU_0027"},
-                 shortName = {admission <- "PA_V3"
-                              surgery <- "CLASSNS"}
-                )
-
-
-
   # Update based on conditions
   # Order of conditions is IMPORTANT
 
@@ -99,11 +88,11 @@ gen_apache_chronic <- function(dt, format = "dataItem") {
   dt[, (apache_chronic) := 0]
 
   # APACHE = 2
-  dt[b_comorbidity > 0 & (get(admission) %in% c("S") | get(surgery) %in% c("S") | get(surgery) %in% c("L")) ,
+  dt[b_comorbidity > 0 & (`Admission type` %in% c("S") | `classification of surgery` %in% c("S") | `classification of surgery` %in% c("L")) ,
      (apache_chronic) := 2]
 
   # APACHE = 5
-  dt[b_comorbidity > 0 & (get(admission) %in% c("M") | get(admission) %in% c("L") | get(surgery) %in% c("U") | get(surgery) %in% c("M")),
+  dt[b_comorbidity > 0 & (`Admission type` %in% c("M") | `Admission type` %in% c("L") | `classification of surgery` %in% c("U") | `classification of surgery` %in% c("M")),
      (apache_chronic) := 5]
 
   # APACHE = NA

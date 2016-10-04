@@ -7,8 +7,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -20,13 +18,13 @@
 #' ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[, ("PaO2/FiO2 ratio") := sample(seq(4,40,1), 200, replace = T)]
 #' ddata[, ("PaO2 - ABG") := sample(seq(4,90,1), 200, replace = T)]
-#' gen_apache_rf(ddata, window = c(0,24), format = "dataItem")
+#' gen_apache_rf(ddata, window = c(0,24))
 #' ddata[time %between% c(0,24), .N, by = c("site", "episode_id", "apache_rf")]
 #'
 #' @export
 
 
-gen_apache_rf <- function(dt, window, format = "dataItem") {
+gen_apache_rf <- function(dt, window = c(0,24)) {
   #  =============================
   #  = APACHE - Respiratory Failure =
   #  =============================
@@ -41,47 +39,35 @@ gen_apache_rf <- function(dt, window, format = "dataItem") {
   apache_rf <- "apache_rf"
   w_apache_rf <- "w_apache_rf"
 
-  # Prioritize the value to take into account for the fiO2
-  switch(format, dataItem =  {fio2_p <- "Inspired fraction of oxygen"
-                              fio2_pp <- "PaO2/FiO2 ratio"
-                              PaO2  <- "PaO2 - ABG"},
-                 NHICcode =     {fio2_p <- "NIHR_HIC_ICU_0150"
-                              fio2_pp <- "NIHR_HIC_ICU_0913"
-                              PaO2  <- "NIHR_HIC_ICU_0132"},
-                 shortName = {fio2_p <- "fiO2"
-                              fio2_pp <- "pf_ratio"
-                              PaO2 <- "~"}
-  )
-
   # Set Default value
   dt[, (w_apache_rf) := 0]
 
   # APACHE = 0
-  dt[(get(fio2_p) < 0.5)  & (get(PaO2) > c(9.3))  , (w_apache_rf) := 0]
-  dt[(get(fio2_p) > 0.49) & (grad_rf < c(26.7)), (w_apache_rf) := 0]
-  dt[(get(fio2_pp)/get(PaO2) < 0.5)  & (get(PaO2) > c(9.3))  , (w_apache_rf) := 0]
-  dt[ (get(fio2_pp)/get(PaO2) > 0.49) & (grad_rf < c(26.7)), (w_apache_rf) := 0]
+  dt[(`Inspired fraction of oxygen` < 0.5)  & (`PaO2 - ABG` > c(9.3))  , (w_apache_rf) := 0]
+  dt[(`Inspired fraction of oxygen` > 0.49) & (grad_rf < c(26.7)), (w_apache_rf) := 0]
+  dt[(`PaO2/FiO2 ratio`/`PaO2 - ABG` < 0.5)  & (`PaO2 - ABG` > c(9.3))  , (w_apache_rf) := 0]
+  dt[ (`PaO2/FiO2 ratio`/`PaO2 - ABG` > 0.49) & (grad_rf < c(26.7)), (w_apache_rf) := 0]
 
 
   # APACHE = 1
-  dt[(get(fio2_p) < 0.5) & (get(PaO2) < c(9.3)), (w_apache_rf) := 1]
-  dt[(get(PaO2) / get(fio2_pp) < 0.5) & (get(PaO2) < c(9.3)), (w_apache_rf) := 1]
+  dt[(`Inspired fraction of oxygen` < 0.5) & (`PaO2 - ABG` < c(9.3)), (w_apache_rf) := 1]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` < 0.5) & (`PaO2 - ABG` < c(9.3)), (w_apache_rf) := 1]
 
   # APACHE = 2
-  dt[(get(fio2_p) > 0.49) & (grad_rf > c(26.6)), (w_apache_rf) := 2]
-  dt[(get(PaO2) / get(fio2_pp) > 0.49) & (grad_rf > c(26.6)), (w_apache_rf) := 2]
+  dt[(`Inspired fraction of oxygen` > 0.49) & (grad_rf > c(26.6)), (w_apache_rf) := 2]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` > 0.49) & (grad_rf > c(26.6)), (w_apache_rf) := 2]
 
   # APACHE = 3
-  dt[(get(fio2_p) < 0.5)  & (get(PaO2) < c(8.1))    , (w_apache_rf) := 3]
-  dt[(get(fio2_p) > 0.49) & (grad_rf > c(46.4)), (w_apache_rf) := 3]
-  dt[(get(PaO2) / get(fio2_pp) < 0.5)  & (get(PaO2) < c(8.1)), (w_apache_rf) := 3]
-  dt[(get(PaO2) / get(fio2_pp) > 0.49) & (grad_rf > c(46.4)), (w_apache_rf) := 3]
+  dt[(`Inspired fraction of oxygen` < 0.5)  & (`PaO2 - ABG` < c(8.1))    , (w_apache_rf) := 3]
+  dt[(`Inspired fraction of oxygen` > 0.49) & (grad_rf > c(46.4)), (w_apache_rf) := 3]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` < 0.5)  & (`PaO2 - ABG` < c(8.1)), (w_apache_rf) := 3]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` > 0.49) & (grad_rf > c(46.4)), (w_apache_rf) := 3]
 
   # APACHE = 4
-  dt[(get(fio2_p) < 0.5)  & (get(PaO2) < c(7.3)) , (w_apache_rf) := 4]
-  dt[(get(fio2_p) > 0.49) & (grad_rf > c(66.3)), (w_apache_rf) := 4]
-  dt[(get(PaO2) / get(fio2_pp) < 0.5)  & (get(PaO2) < c(7.3)) , (w_apache_rf) := 4]
-  dt[(get(PaO2) / get(fio2_pp) > 0.49) & (grad_rf > c(66.3)), (w_apache_rf) := 4]
+  dt[(`Inspired fraction of oxygen` < 0.5)  & (`PaO2 - ABG` < c(7.3)) , (w_apache_rf) := 4]
+  dt[(`Inspired fraction of oxygen` > 0.49) & (grad_rf > c(66.3)), (w_apache_rf) := 4]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` < 0.5)  & (`PaO2 - ABG` < c(7.3)) , (w_apache_rf) := 4]
+  dt[(`PaO2 - ABG` / `PaO2/FiO2 ratio` > 0.49) & (grad_rf > c(66.3)), (w_apache_rf) := 4]
 
   # Calculate APACHE score for time window
   dt[time %between% window, (apache_rf) := max(w_apache_rf, na.rm = T), by = c("site", "episode_id")]

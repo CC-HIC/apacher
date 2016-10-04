@@ -6,8 +6,6 @@
 #' @import data.table
 #' @param dt data.table containing physiology data
 #' @param window Numerical.Vector delimiting boundaries for time-window.
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -17,12 +15,12 @@
 #' ddata[ , ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[ , (d_ht) := sample(seq(0.10,0.7,0.01), 200, replace = T)]
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
-#' system.time(gen_apache_ht(ddata, window = c(0,24), format = "dataItem"))
+#' system.time(gen_apache_ht(ddata, window = c(0,24)))
 #' ddata[time %between% c(0,24), .N, by = c("site","episode_id", "apache_ht")]
 #'
 #' @export
 
-gen_apache_ht <- function(dt, window) {
+gen_apache_ht <- function(dt, window = c(0,24)) {
   #  =======================
   #  = APACHE - Hematocrit =
   #  =======================
@@ -45,6 +43,8 @@ gen_apache_ht <- function(dt, window) {
 
   # Update based on conditions
   # Order of conditions is IMPORTANT
+
+  dt[, (w_apache_ht) := 0]
 
   # APACHE = 0
   dt[d_ht > c(0.29), (w_apache_ht) := 0]
