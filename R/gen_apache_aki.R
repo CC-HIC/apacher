@@ -42,10 +42,10 @@ gen_apache_aki <- function(dt, crrt, window = c(0,24)) {
   dt[, (w_apache_aki) := 0]
 
   # APACHE = 0
-  dt[`Creatinine` < c(54), (w_apache_aki) := 0]
+  dt[`Creatinine` < c(54), (w_apache_aki) := 2]
 
   # APACHE = 1
-  dt[`Creatinine` %between% c(55, 129), (w_apache_aki) := 1]
+  dt[`Creatinine` %between% c(55, 129), (w_apache_aki) := 0]
 
   # APACHE = 2
   dt[`Creatinine` > c(129), (w_apache_aki) := 2]

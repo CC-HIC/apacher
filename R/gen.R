@@ -138,26 +138,25 @@ gen_q_rr <- function(dt, qual = c(3,60)) {
   # Define the value for q_rr
   if ("Spontaneous Respiratory Rate" %in% names(dt)){
     dt[!is.na(`Spontaneous Respiratory Rate`)
-       & `Spontaneous Respiratory Rate`
-       %between% qual, q_rr := `Spontaneous Respiratory Rate`]
+       & `Spontaneous Respiratory Rate` %between% qual, q_rr := `Spontaneous Respiratory Rate`]
   }else{
     warning(paste("Spontaneous Respiratory Rate", "not available"))
   }
 
   if ("Total respiratory rate (monitor)" %in% names(dt)){
-    dt[q_rr == 10000
+    dt[q_rr == 100000
        & !is.na(`Total respiratory rate (monitor)`)
-       & `Total respiratory rate (monitor)`
-       %between% qual, q_rr := `Total respiratory rate (monitor)`]
+       & `Total respiratory rate (monitor)` %between% qual,
+       q_rr := `Total respiratory rate (monitor)`]
   }else{
     warning(paste("Total respiratory rate (monitor)", "not available"))
   }
 
   if ("Total respiratory rate (ventilator)" %in% names(dt)){
-    dt[q_rr == 10000
+    dt[q_rr == 100000
        & !is.na(`Total respiratory rate (ventilator)`)
-       & `Total respiratory rate (ventilator)`
-       %between% qual, q_rr := `Total respiratory rate (ventilator)`]
+       & `Total respiratory rate (ventilator)` %between% qual,
+       q_rr := `Total respiratory rate (ventilator)`]
   }else{
     warning(paste("Total respiratory rate (ventilator)", "not available"))
   }
@@ -181,8 +180,6 @@ gen_q_rr <- function(dt, qual = c(3,60)) {
 #'        \item with RQ = 1 , PAtm = 100, PH2O = 6.2 ; (A-a)O2 Gradient = (100 - 6.2) * FIO2 - PaCO2 - Pa02}}
 
 #' @param dt data.table containing physiology data
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
 #'
 #' @examples
 #' ddata <- NULL
@@ -244,8 +241,7 @@ gen_grad <- function(dt){
 #' @description gen_grad derives a Haematocrit from haemoglobin and mean globular volume
 #' @param dt data for computation.
 #' @param mcch Numeric. An average value of mean corpuscular concentration of haemoglobin. Default is MCCH filled in datatable
-#' @param format String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-#' See relabel_cols for more informations.
+#'
 #'
 #' @examples
 #' ddata <- NULL
@@ -259,21 +255,23 @@ gen_grad <- function(dt){
 
     # Create the variable d_ccmh if ccmh unavailable
     ifelse (is.null(mcch), dt[, d_mcch := 330], dt[, d_mcch := mcch])
-
-    dt[, d_ht := `Haemoglobin` / d_mcch]
-    dt[is.na(d_ht), d_ht := `Haemoglobin ABG/VBG` / d_mcch]
+    
+    dt[is.na(d_mcch), d_mcch := 330]
+    dt[, d_ht := round(`Haemoglobin` / d_mcch, 2)]
+    dt[is.na(d_ht), d_ht := round(`Haemoglobin ABG/VBG` / d_mcch, 2)]
+    dt[d_ht < 20, d_ht := (d_ht*100)]
 
   }
 
-  #  =========================================
-  #  = Generate weights from diagnosis codes =
-  #  =========================================
-  #
+#  =========================================
+#  = Generate weights from diagnosis codes =
+#  =========================================
+#
 
-  #' Generate weights variable from the primary diagnosis for asmission
-  #' gen_weights derives a Haematocrit from haemoglobin and mean globular volume
-  #' @param dt data for computation.
-  #' @export
+#' Generate weights variable from the primary diagnosis for asmission
+#' gen_weights derives a Haematocrit from haemoglobin and mean globular volume
+#' @param dt data for computation.
+#' @export
 
   gen_weights <- function (dt){
     # Diagnostic Category Weight:
@@ -349,3 +347,32 @@ gen_grad <- function(dt){
 
 
   }
+
+  #  ==================================================
+  #  = Generate 1d datatable summarizing 2d variables =
+  #  ==================================================
+  #
+
+  #' Generate 1d datatable summarizing 2d variables
+  #' reduce allows to reduce datatable according to time-window selected and according to
+  #' the iteration of values for selected variables, into a 1d table with one row by admission
+  #' @param dt data for computation.
+  #' @param window The selected time window
+  #' @export
+  #'
+  #'
+
+reduce <- function(dt, window){
+  f <- function(x){
+    if(is.numeric(x)){
+      x <- median(x, na.rm = T)
+    }else{
+      x <- ifelse(length(which(is.na(unique(x)))) > 0, unique(x)[which(!is.na(unique(x)))][1], unique(x)[1])
+    }
+  }
+
+    dt[time %between% window, .SD][
+      , lapply(.SD, f), by = c("site", "episode_id")
+    ]
+  }
+

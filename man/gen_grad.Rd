@@ -8,9 +8,6 @@ gen_grad(dt)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 gen_grad derives an Alveolar to Arterial gradient from fio2 and/or PaO2 and PaCO2 fields

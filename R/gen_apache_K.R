@@ -39,14 +39,14 @@ gen_apache_K <- function(dt, window = c(0,24)) {
 
   dt[, (w_apache_K) := 0]
 
-  # APACHE = 1
-  dt[(`Potassium` > c(2.9)), (w_apache_K) := 1]
-
   # APACHE = 0
   dt[(`Potassium` > c(3.4)), (w_apache_K) := 0]
+  
+  # APACHE = 1
+  dt[(`Potassium` < c(3.5)) | (`Potassium` > c(5.4)), (w_apache_K) := 1]
 
   # APACHE = 2
-  dt[(`Potassium` < c(3))  | (`Potassium` > c(5.4)), (w_apache_K) := 2]
+  dt[(`Potassium` < c(3)), (w_apache_K) := 2]
 
   # APACHE = 3
   dt[(`Potassium` > c(5.9)), (w_apache_K) := 3]

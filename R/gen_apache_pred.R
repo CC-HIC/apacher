@@ -20,37 +20,41 @@
 #' ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 #' ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 #' ddata[, ("weight") := sample(seq(-0.5, 1.75, 0.01), 200, replace = T), by = c("site", "episode_id")]
-#' ddata[, ("emergent") := sample(c("Medical", "Post-operative"), 200, replace = T), by = c("site", "episode_id")]
+#' ddata[, ("emergent_surgery") := sample(c("Yes", "No"), 200, replace = T), by = c("site", "episode_id")]
 #' gen_apache_pred(ddata, window = c(0,24))
 #' ddata[time %between% c(0,24), .N, by = c("site", "episode_id", "risk")]
 #'
 #' @export
 
-gen_apache_pred <- function(dt, window){
+gen_apache_pred <- function(dt, window, imput = NULL){
 
   # Naming  the apache_score
   apache_pred <- "apache_pred"
 
   # Display a warning if fields are missing
   if (!match("apache_score", names(dt)) != F ){
-    stop( paste("?Please, compute APACHE score First"))
+    stop( paste("Please, compute APACHE score First"))
   }
 
   if (!match("weight", names(dt)) != F ){
-    stop( paste("?Please, report diagnoses wheight on the dataset"))
+    stop( paste("Please, report diagnoses weights on the dataset"))
   }
 
-  if (!match("emergent", names(dt)) != F ){
-    stop( paste("?Please, label the admission data by post-operative or medical"))
+  if (!match("emergent_surgery", names(dt)) != F ){
+    stop( paste("Please, label the admission data by post-operative or medical"))
   }
 
-
+  if (! "time" %in% names(dt)){dt[, time := 1]}
   # The predicted mortality is calculated according to the following equation:
   # ln(R/(1-R)) = -3.157 + (apache_score * 0.146) + (0.603 for emergent surgery) + Diagnostic category weight
-  dt[time %between% window & `emergent` == "Medical" , "R/1-R" := exp(-3.157 + `apache_score` * 0.146 + `weight`)]
-  dt[time %between% window & `emergent` == "Post-operative" , "R/1-R" := exp(-3.157 + `apache_score` * 0.146 + 0.603 + `weight`)]
-
-  dt[time %between% window , "risk" := (`R/1-R`/(1+`R/1-R`))]
+  dt[time %between% window & `emergent_surgery` == "No" , "R/1-R" := exp(-3.157 + `apache_score` * 0.146 + `weight`)]
+  dt[time %between% window & `emergent_surgery` == "Yes" , "R/1-R" := exp(-3.157 + `apache_score` * 0.146 + 0.603 + `weight`)]
+  if (!is.null(imput)){
+    dt[time %between% window & !is.na(`weight`) & is.na(`risk`), weight := `imput`]
+    dt[time %between% window & !is.na(`weight`) & is.na(`risk`), "R/1-R" := exp(-3.157 + `apache_score` * 0.146 + `weight`)]
+  }
+  
+  dt[time %between% window , "risk" := round((`R/1-R`/(1+`R/1-R`)), 2)]
 
 }
 

@@ -10,9 +10,6 @@ gen_haemo(dt, mcch = NULL)
 \item{dt}{data for computation.}
 
 \item{mcch}{Numeric. An average value of mean corpuscular concentration of haemoglobin. Default is MCCH filled in datatable}
-
-\item{format}{String. The format chosen for data items. Could be "dataItem", "shortName" or "NHICcode".
-See relabel_cols for more informations.}
 }
 \description{
 gen_grad derives a Haematocrit from haemoglobin and mean globular volume

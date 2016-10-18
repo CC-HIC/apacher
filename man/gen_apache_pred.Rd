@@ -4,7 +4,7 @@
 \alias{gen_apache_pred}
 \title{Generates the predicted mortality frome the APACHE score}
 \usage{
-gen_apache_pred(dt, window)
+gen_apache_pred(dt, window, imput = NULL)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
@@ -27,7 +27,7 @@ ddata[, ("apache_score") := sample(seq(0,60,1), 200, replace = T)]
 ddata[, ("site") := sample(c("XX", "ZZ", "YY"), 200, replace = T)]
 ddata[, ("episode_id") := sample(seq(1,250,1), 200, replace = T)]
 ddata[, ("weight") := sample(seq(-0.5, 1.75, 0.01), 200, replace = T), by = c("site", "episode_id")]
-ddata[, ("emergent") := sample(c("Medical", "Post-operative"), 200, replace = T), by = c("site", "episode_id")]
+ddata[, ("emergent_surgery") := sample(c("Yes", "No"), 200, replace = T), by = c("site", "episode_id")]
 gen_apache_pred(ddata, window = c(0,24))
 ddata[time \%between\% c(0,24), .N, by = c("site", "episode_id", "risk")]
 

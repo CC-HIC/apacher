@@ -39,23 +39,23 @@ gen_apache_mf <- function(dt, window = c(0,24)) {
 
   # APACHE = 0
   dt[(`pH - ABG / VBG`   > c(7.32)), (w_apache_mf) := 0]
-  dt[is.na(w_apache_mf)  & (`HCO3 - ABG / VBG` > c(21))  , (w_apache_mf) := 0]
+  dt[is.na(`pH - ABG / VBG`)  & (`HCO3 - ABG / VBG` > c(21))  , (w_apache_mf) := 0]
 
   # APACHE = 1
   dt[(`pH - ABG / VBG`   > c(7.49)), (w_apache_mf) := 1]
-  dt[is.na(w_apache_mf)  & (`HCO3 - ABG / VBG` > c(31))  , (w_apache_mf) := 1]
+  dt[is.na(`pH - ABG / VBG`)  & (`HCO3 - ABG / VBG` > c(31))  , (w_apache_mf) := 1]
 
   # APACHE = 2
   dt[ (`pH - ABG / VBG`   < c(7.33)), (w_apache_mf) := 2]
-  dt[is.na(w_apache_mf)  & (`HCO3 - ABG / VBG` < c(22))  , (w_apache_mf) := 2]
+  dt[is.na(`pH - ABG / VBG`)  & (`HCO3 - ABG / VBG` < c(22))  , (w_apache_mf) := 2]
 
   # APACHE = 3
   dt[(`pH - ABG / VBG`   < c(7.25)) | (`pH - ABG / VBG`   > c(7.59)), (w_apache_mf) := 3]
-  dt[(is.na(w_apache_mf)) & (((`HCO3 - ABG / VBG` < c(18)))  | (`HCO3 - ABG / VBG` > c(40))) , (w_apache_mf) := 3]
+  dt[(is.na(`pH - ABG / VBG`)) & (((`HCO3 - ABG / VBG` < c(18)))  | (`HCO3 - ABG / VBG` > c(40))) , (w_apache_mf) := 3]
 
   # APACHE = 4
   dt[ (`pH - ABG / VBG`   < c(7.16)) | (`pH - ABG / VBG`   > c(7.69)), (w_apache_mf) := 4]
-  dt[(is.na(w_apache_mf)) & ((`HCO3 - ABG / VBG` < c(16))  | (`HCO3 - ABG / VBG` > c(51))) , (w_apache_mf) := 4]
+  dt[(is.na(`pH - ABG / VBG`)) & ((`HCO3 - ABG / VBG` < c(16))  | (`HCO3 - ABG / VBG` > c(51))) , (w_apache_mf) := 4]
 
   # Calculate APACHE score for time window
   dt[time %between% window, (apache_mf) := max(w_apache_mf, na.rm = T), by = c("site", "episode_id")]

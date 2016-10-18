@@ -8,9 +8,6 @@ gen_smr(dt, pred, observed, group)
 }
 \arguments{
 \item{dt}{data.table containing physiology data}
-
-\item{format}{Strings. The format that have been chosen by the users at naming the fields of the datatable.
-see relabelcols for more informations.}
 }
 \description{
 Generates the APACHE wbc score;

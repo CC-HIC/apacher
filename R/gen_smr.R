@@ -5,8 +5,7 @@
 #'
 #' @import data.table
 #' @param dt data.table containing physiology data
-#' @param format Strings. The format that have been chosen by the users at naming the fields of the datatable.
-#' see relabelcols for more informations.
+#'
 #'
 #' @examples
 #' # system.time(gen_apache_wbc(ddata, format = "dataItem"))
@@ -21,8 +20,10 @@ gen_smr <- function(dt, pred, observed, group){
   smr <- "smr"
 
   # Prioritize the value to take into account for the acute kidney injury
-  dt[, smr := (sum(get(observed), na.rm = T)/length(which(!is.na(get(observed))))/get(pred)), by = group]
-
+  dt[, smr := (sum(get(observed), na.rm = T)/length(which(!is.na(get(observed))))/mean(get(pred)[which(!is.na(get(observed)))], na.rm = T)), by = group]
+  res <- matrix(NA, ncol = 2, nrow = 1, dimnames = list("smr", c(levels(as.factor(data[, get(group)])))))
+  res[1, ] <- dt[ , round(unique(smr), 2), by = get(group)][, V1]
+  return(res)
 }
 
 

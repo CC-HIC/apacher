@@ -47,16 +47,16 @@ gen_apache_ht <- function(dt, window = c(0,24)) {
   dt[, (w_apache_ht) := 0]
 
   # APACHE = 0
-  dt[d_ht > c(0.29), (w_apache_ht) := 0]
+  dt[d_ht > c(29), (w_apache_ht) := 0]
 
   # APACHE = 1
-  dt[(d_ht > c(0.459)), (w_apache_ht) := 1]
+  dt[(d_ht > c(45.9)), (w_apache_ht) := 1]
 
   # APACHE = 2
-  dt[(d_ht < c(0.30)) | (d_ht > c(0.499)), (w_apache_ht) := 2]
+  dt[(d_ht < c(30)) | (d_ht > c(49.9)), (w_apache_ht) := 2]
 
   # APACHE = 4
-  dt[(d_ht < c(0.20)) | (d_ht > c(0.599)), (w_apache_ht) := 4]
+  dt[(d_ht < c(20)) | (d_ht > c(59.9)), (w_apache_ht) := 4]
 
   # Calculate APACHE score for time window
   dt[time %between% window, (apache_ht) := max(w_apache_ht, na.rm = T), by = c("site", "episode_id")]
